@@ -1,5 +1,5 @@
 // lib/models/AvaliableDrivers.js
-import mongoose, { models } from "mongoose";
+import mongoose from "mongoose";
 
 const AvaliableDriverSchema = new mongoose.Schema({
   cell_id: {
@@ -14,6 +14,6 @@ const AvaliableDriverSchema = new mongoose.Schema({
   }],
 });
 
-const AvaliableDriver = models.AvaliableDriver || mongoose.model("AvaliableDriver", AvaliableDriverSchema);
+const AvaliableDriver = mongoose.models.AvaliableDriver || mongoose.model("AvaliableDriver", AvaliableDriverSchema);
 
 export default AvaliableDriver;

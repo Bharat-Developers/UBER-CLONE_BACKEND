@@ -6,7 +6,11 @@ import cors from 'cors';
 const app = express();
 app.use(cors());
 const server = createServer(app);
-const io = new Server(server);
+const io = new Server(server,{
+    cors: {
+        origin: "*"
+    }
+});
 dotenv.config()
 const count = io.engine.clientsCount;
 io.on('connection',()=>{
@@ -37,6 +41,10 @@ io.engine.on("connection_error", (err) => {
   console.log(err.message);  // the error message, for example "Session ID unknown"
   console.log(err.context);  // some additional error context
 });
+
+socket.onAny((event, ...args) => {
+    console.log(event, args);
+  });
 
 const PORT = process.env.SOCKET_PORT || 5002
 server.listen(PORT,() => {

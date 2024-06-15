@@ -1,10 +1,10 @@
-import AvailableDrivers from '../models/AvaliableDrivers'
+
 import e, { Router } from 'express'
 import authDriver from '../middlewares/driver_jwt.js'
 import authRider from '../middlewares/rider_jwt.js'
-import { getS2Id, getCell_Ids } from '../functions/S2CellIds'
-import AvaliableDriver from '../models/AvaliableDrivers'
-import Driver from '../models/Driver'
+import { getS2Id, getCell_Ids } from '../functions/S2CellIds.js'
+import AvaliableDriver from '../models/AvaliableDrivers.js'
+import Driver from '../models/Driver.js'
 const router = Router()
 
 
