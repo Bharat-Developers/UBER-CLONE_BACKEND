@@ -1,5 +1,5 @@
 
-import e, { Router } from 'express'
+import { Router } from 'express'
 import authDriver from '../middlewares/driver_jwt.js'
 import authRider from '../middlewares/rider_jwt.js'
 import { getS2Id, getCell_Ids } from '../functions/S2CellIds.js'

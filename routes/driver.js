@@ -13,7 +13,7 @@ router.post("/signUp",async(req,res) => {
     //make sure the values are checked and validated at frontend
     try{
         await connect(); // connecting to db
-        let driver_exist = await Driver.findOne({email: email});;
+        let driver_exist = await Driver.findOne({email: email});
 
         if(driver_exist){
           return  res.status(409).json({success: false, msg: "driver already exist"});
@@ -65,7 +65,7 @@ router.post("/signUp",async(req,res) => {
             });
             // The HTTP 201 Created success status response code indicates that the request has succeeded and has led to the creation of a resource.
         
-        });;
+        });
         
     }catch(error){
         //HTTP 500 Internal Server Error 
@@ -123,7 +123,7 @@ router.post("/login",async (req,res) => {
                     msg: "Driver loged in"
                 });
                 // HTTP status code 200 for successful requests that retrieve or update a resource
-            });;
+            });
 
     }catch(error){
         //HTTP 500 Internal Server Error 
@@ -131,9 +131,9 @@ router.post("/login",async (req,res) => {
         return res.status(500).json({
             success: false,
             msg: 'Something went wrong'
-        });;
+        });
     }
-});;
+});
 
 
 //3. update a driver 
@@ -182,7 +182,7 @@ router.delete("/",auth,async(req,res) => {
             return req.status(404).json({
                 success: false,
                 msg: "driver or cab not exist"
-            });;
+            });
         }
 
         driver = await Driver.findByIdAndDelete(req.driver.id)

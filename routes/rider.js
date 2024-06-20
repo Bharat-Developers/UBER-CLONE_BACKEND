@@ -49,7 +49,7 @@ router.post("/signUp",async(req,res,next) => {
             });
             // The HTTP 201 Created success status response code indicates that the request has succeeded and has led to the creation of a resource.
         
-        });;
+        });
         
     }catch(error){
         //HTTP 500 Internal Server Error 
@@ -57,7 +57,7 @@ router.post("/signUp",async(req,res,next) => {
         return res.status(500).json({
             success: false,
             msg: 'Something went wrong'
-        });;
+        });
     }
 });
 
@@ -107,7 +107,7 @@ router.post("/login",async (req,res,next) => {
                     msg: "Rider loged in"
                 });
                 // HTTP status code 200 for successful requests that retrieve or update a resource
-            });;
+            });
 
     }catch(error){
         //HTTP 500 Internal Server Error 
@@ -115,9 +115,9 @@ router.post("/login",async (req,res,next) => {
         return res.status(500).json({
             success: false,
             msg: 'Something went wrong'
-        });;
+        });
     }
-});;
+});
 
 
 //3. update a rider 
@@ -166,7 +166,7 @@ router.delete("/",auth,async(req,res,next) => {
             return req.status(404).json({
                 success: false,
                 msg: "rider not exist"
-            });;
+            });
         }
 
         rider = await Rider.findByIdAndDelete(req.rider.id)
