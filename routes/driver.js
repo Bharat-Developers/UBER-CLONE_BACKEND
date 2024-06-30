@@ -54,7 +54,7 @@ router.post("/signUp",async(req,res) => {
         }
 
         jwt.sign(payload,process.env.SECRET_KEY_DRIVER,{
-            expiresIn: '300m'// 300 mintues
+            expiresIn: '14400m' // 10 days
         },(err, token) => {
             if (err) throw err;
 
@@ -85,7 +85,6 @@ router.post("/login",async (req,res) => {
     try{
         await connect(); // connecting to db
         let driver = await Driver.findOne({email:email});
-
         if(!driver){
             //404 return code  means 'resource not found'
             return res.status(404).json({
@@ -112,8 +111,8 @@ router.post("/login",async (req,res) => {
                 }
             }
     
-            jwt.sign(payload,process.env.SECRET_KEY_RIDER,{
-                expiresIn: '300m'// 300 mintues
+            jwt.sign(payload,process.env.SECRET_KEY_DRIVER,{
+                expiresIn: '14400m' // 10 days
             },(err, token) => {
                 if (err) throw err;
     

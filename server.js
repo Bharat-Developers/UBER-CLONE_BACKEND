@@ -25,8 +25,8 @@ app.use(cors(
 app.use('/api/rider',rider_path);
 app.use('/api/driver',driver_path);
 app.use('/api/cab',cab_path);
-app.use('api/availableDriver',availableDriver_path);
-app.use('api/trip/',trip_path);
+app.use('/api/availableDriver',availableDriver_path);
+app.use('/api/trip/',trip_path);
 
 // connecting to mongodb and starting the server
 const start = async () => {

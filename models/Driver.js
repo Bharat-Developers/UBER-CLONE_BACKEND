@@ -44,6 +44,7 @@ const DriverSchema = new Schema({
     },
     availablity: {
         type: Boolean,
+        default: false,
         required: true
     },
     cabId: {

@@ -13,7 +13,7 @@ router.put('/',authDriver,async(req,res,next) => {
         const action = req.body.action
         const cell_id = req.body.cell_id
 
-        const existingCell = await AvailableDrivers.findOne({cell_id: cell_id})
+        const existingCell = await AvaliableDriver.findOne({cell_id: cell_id})
         if(!existingCell){
             // If no existing entry, create a new one
             if(action === "push") {
@@ -79,7 +79,7 @@ router.get('/',authRider,async(req,res,next) => {
         const drivers_id = []
         // get all driver id in cells
         for(const cell of cells){
-            const driver = await AvailableDrivers.findOne({cell_id: region}).select("-_id drivers")
+            const driver = await AvaliableDriver.findOne({cell_id: cell}).select("-_id drivers")
             //if cell not exist , create new cell
             if(!driver){
                 const newCell = new AvaliableDriver();

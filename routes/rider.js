@@ -38,7 +38,7 @@ router.post("/signUp",async(req,res,next) => {
         }
 
         jwt.sign(payload,process.env.SECRET_KEY_RIDER,{
-            expiresIn: '300m'// 300 mintues
+            expiresIn: '14400m'// 10 days
         },(err, token) => {
             if (err) throw err;
 
@@ -69,7 +69,6 @@ router.post("/login",async (req,res,next) => {
     try{
         await connect(); // connecting to db
         let rider = await Rider.findOne({email:email});
-
         if(!rider){
             //404 return code  means 'resource not found'
             return res.status(404).json({
@@ -97,7 +96,7 @@ router.post("/login",async (req,res,next) => {
             }
     
             jwt.sign(payload,process.env.SECRET_KEY_RIDER,{
-                expiresIn: '300m'// 300 mintues
+                expiresIn: '14400m'// 10 days
             },(err, token) => {
                 if (err) throw err;
     
@@ -218,7 +217,7 @@ export default router
 //endpoints
 
 // post: "/signUp" = signUp rider
-// post: "/login"  = login rider
+// get: "/login"  = login rider
 // put: "/"        = update rider
 // delete: "/"     = delete rider
 // get: "/"        = get rider details
