@@ -7,7 +7,7 @@ export default async function (token) {
             console.log(error.message+ 'in hashing');
             return new Error("not authorized");
         } else {
-            id = decoded.rider.id;
+            id = decoded.id;
         }
     })
     return id

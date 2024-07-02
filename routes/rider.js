@@ -29,27 +29,14 @@ router.post("/signUp",async(req,res,next) => {
         //save the rider
         await rider.save()
 
-        //create jsonWebToken
-
-        const payload = {
-            rider : {
-                id : rider._id
-            }
-        }
-
-        jwt.sign(payload,process.env.SECRET_KEY_RIDER,{
-            expiresIn: '14400m'// 10 days
-        },(err, token) => {
-            if (err) throw err;
-
-            res.status(201).json({
-                success: true,
-                token: token,
-                msg: "Rider Created"
-            });
-            // The HTTP 201 Created success status response code indicates that the request has succeeded and has led to the creation of a resource.
-        
+        res.status(201).json({
+            success: true,
+            token: token,
+            msg: "Rider Created"
         });
+        // The HTTP 201 Created success status response code indicates that the request has succeeded and has led to the creation of a resource.
+    
+
         
     }catch(error){
         //HTTP 500 Internal Server Error 
@@ -210,6 +197,13 @@ router.get("/",auth, async(req,res,next) => {
     }
 
 });
+
+router.get("/auth", auth, (req, res) => {
+    
+    res.status(200).json({
+        msg: "customer is authenticated"
+    })
+})
 
 export default router
 

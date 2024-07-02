@@ -16,16 +16,20 @@ const TripSchema = new Schema({
         default: 0,       
     },
     source: {
-        type: [Number,Number], 
+        type: String, 
         required: true,
     },
     destination : {
-        type: [Number,Number], 
+        type: String, 
         required : true,
     },
     amount : {
         type : String,
         required : true,
+    },
+    otp: {
+        type: Number,
+        required : true
     }
 },
 {

@@ -12,7 +12,8 @@ import Driver from './models/Driver.js';
 import Cab from './models/cab.js';
 import jwt from 'jsonwebtoken'
 import verifyHash from './middlewares/verifyHash.js';
-import { error } from 'console';
+import Rider from './models/Rider.js'
+import Trip from './models/Trip.js';
 const app = express();
 app.use(cors());
 const server = createServer(app);
@@ -82,7 +83,7 @@ io.use(async (socket, next) => {
 })
 
 let count = 0
-io.on('connection',(socket)=>{
+io.on('connection', (socket) => {
     count++;
 
     socket.on('disconnect', function (msg) {
@@ -92,49 +93,50 @@ io.on('connection',(socket)=>{
         //io.emit('users.count', count);
     });
 
-    socket.on('join room',(room_id)=>{
+    socket.on('join room', (room_id) => {
         socket.join(room_id)
     })
 
-    socket.on('request ride', async function (data){
+    socket.on('request ride', async function (data) {
+        try{
+
         connect(); // connect to db
-        //console.log(data.name)
-        const cell_ids = getCell_Ids({latitude: data.coor.lat,longitude: data.coor.lon})// get cell ids of 30 cells around current cell
+        const cell_ids = getCell_Ids({ latitude: data.coor.lat, longitude: data.coor.lon })// get cell ids of 30 cells around current cell
         const drivers_id = []
         //console.log(cell_ids)
-        for(let i=0;i< cell_ids.length;i++){
-            console.log(i+' ')
-            const cell = await AvaliableDriver.findOne({cell_id: (cell_ids[i]).toString()})
-            
+        for (let i = 0; i < cell_ids.length; i++) {
+            console.log(i + ' ')
+            const cell = await AvaliableDriver.findOne({ cell_id: (cell_ids[i]).toString() })
+
             //if cell not exist , skip
-            if(cell){
+            if (cell) {
                 const driver_list = cell.drivers
-                for(let j=0;j<driver_list.length;j++){
+                for (let j = 0; j < driver_list.length; j++) {
                     drivers_id.push(driver_list[j])
                 }
                 //console.log(drivers_id)
             }
-            
+
         }
-         if(drivers_id.length<1){
+        if (drivers_id.length < 1) {
             socket.emit('no driver')
             console.log('no driver found')
-         }else{
+        } else {
             const driversLatlon = []
-            for(const id of drivers_id){
+            for (const id of drivers_id) {
                 const driver = await Driver.findById(id).select("latLon availablity")
-                if(driver.availablity){
+                if (driver.availablity) {
                     driversLatlon.push(driver.latLon)
                 }
 
             }
-            socket.emit('drivers latLon', driversLatlon )
-            
+            socket.emit('drivers latLon', driversLatlon)
+
             // request to all driver connected in region
-            const room = (Math.floor(Math.random()*1000000)).toString()
+            const room = (Math.floor(1000000 + Math.random() * 9000000)).toString()
             socket.join(room)
-            for(let p = 0; p< drivers_id.length;p++){
-                if(drivers_id[p].toString() in connectionsDriver){
+            for (let p = 0; p < drivers_id.length; p++) {
+                if (drivers_id[p].toString() in connectionsDriver) {
                     console.log('000')
                     connectionsDriver[drivers_id[p].toString()].join(room)
                     console.log(connectionsDriver[drivers_id[p]].rooms)
@@ -142,78 +144,177 @@ io.on('connection',(socket)=>{
                 }
             }
 
+            const rider_name = await Rider.findById(socket.rider_id).select('-_id name')
+            data.details.name = rider_name.name
             const payload = {
-                rider:{
                     id: socket.rider_id
-                }
             }
 
-            jwt.sign(payload,process.env.SECRET_KEY_HASH,{
+            jwt.sign(payload, process.env.SECRET_KEY_HASH, {
                 expiresIn: '100m' // 100 mintues
-            },(error,token)=>{
-                if(error){
+            }, (error, token) => {
+                if (error) {
                     console(error)
-                }else{
-                    socket.to(room).volatile.emit('ride request',{details: data.details, room_id: room,rider_id:token},()=>{
+                } else {
+                    socket.to(room).volatile.emit('ride request', { details: data.details, room_id: room, rider_id: token }, () => {
                         console.log('sended request')
                     })
                 }
-                
+
+            })
+
+        }        
+    }catch(err){
+        console.log(err.message)
+    }
+
+
+    })
+
+
+    socket.on('cancel trip-rider', async (data) => {
+        // set trip status cancelled here
+        try{
+            const trip_id = await verifyHash(data.trip_id)
+            const trip = await Trip.findByIdAndUpdate(trip_id.toString(), {status:'canceled'}, {
+                new: true, // return the updated driver
+                runValidators: true // validate the Schema
             })
             
-         }
-         
-
+            socket.to(data.room_id).emit('canceled-rider', data)
+        }catch(err){
+            console.log(err.message)
+        }
+       
     })
 
-
-    socket.on('cancel trip',(data)=>{
+    socket.on('cancel trip-driver', async (data) => {
         // set trip status cancelled here
-        socket.to(data.room_id).emit('canceled',data)
+        try{
+            const trip_id = await verifyHash(data.trip_id)
+            const trip = await Trip.findByIdAndUpdate(trip_id.toString(), {status:'canceled'}, {
+                new: true, // return the updated driver
+                runValidators: true // validate the Schema
+            })
+            
+            socket.to(data.room_id).emit('canceled-driver', data)
+        }catch(err){
+            console.log(err.message)
+        }
+        
     })
 
-    socket.on('accept ride', async function (data){ // https://github.com/socketio/socket.io/issues/3042
-        try{
-        socket.to(data.room_id).emit('tranfered',{room_id: data.room_id}) // sending all other drivers that room is close
-        io.of('/').socketsLeave(data.room_id) // drivers leave room
-        socket.join(data.room_id);
-        const rider_id = await verifyHash(data.rider_id)
-        connectionsRider[rider_id].join(data.room_id);
+    socket.on('accept ride', async function (data,callback) { // https://github.com/socketio/socket.io/issues/3042
+        try {
+            socket.to(data.room_id).emit('tranfered', { room_id: data.room_id }) // sending all other drivers that room is close
+            io.of('/').socketsLeave(data.room_id) // drivers leave room
+            socket.join(data.room_id);
+            const rider_id = await verifyHash(data.rider_id)
+            connectionsRider[rider_id].join(data.room_id);
 
-            
-            const driver_id =  await verifyDriver(data.token)
-            
+
+            const driver_id = await verifyDriver(data.token)
+
             const driver = await Driver.findById(driver_id.toString()).select('-_id name number latLon cabId')
             const cab = await Cab.findById(driver.cabId)
             // create new trip here
-            socket.to(data.room_id).emit('driver-detials',
-                {
-                    name: driver.name,
-                    number: driver.number,
-                    Rc: cab.rCNo,
-                    latLon : driver.latLon,
-                    amount : data.amount
-                }
-            ) //goes to rider page
+            const newTrip = new Trip()
+            newTrip.customerId = rider_id
+            newTrip.driverId = driver_id
+            newTrip.source = data.details.pickup
+            newTrip.destination = data.details.dropoff
+            newTrip.amount = data.details.amount
+            newTrip.status = 'accepted'
+            // genrate otp
+            const otp = Math.floor(1000 + Math.random() * 9000)
+            newTrip.otp = otp
+            newTrip.save()
 
-        }catch(error){
+            const payload = {
+                    id: newTrip._id
+            }
+
+            jwt.sign(payload, process.env.SECRET_KEY_HASH, {
+                expiresIn: '120m'
+            }, (err, token) => {
+                if (err) {
+                    console.log(err.message)
+                } else {
+                    socket.to(data.room_id).emit('driver-detials',
+                        {
+                            name: driver.name,
+                            number: driver.number,
+                            Rc: cab.rCNo,
+                            latLon: driver.latLon,
+                            amount: data.details.amount,
+                            otp: newTrip.otp,
+                            trip_id: token
+                        }
+                    )
+
+                    callback(token)
+                }
+
+
+            }) //goes to rider page
+
+        } catch (error) {
             console.log(error)
         }
     })
 
-    socket.on('start trip',(data)=>{
-        try{
+    socket.on('start trip', async (data,errFunction,callback) => {
+        try {
             //verify otp here data.otp
-            socket.to(data.details.room_id).emit('trip started') // notify on rider side
-        }catch(error){
+             console.log(data.details)
+            const trip_id = await verifyHash(data.details.trip_id)
+            
+            const trip = await Trip.findById(trip_id.toString())
+            if(trip.otp != data.otp){
+                console.log('wrong otp')
+                errFunction()
+            }else{
+                trip.status = 'onGoing'
+                trip.save()
+                socket.to(data.details.room_id).emit('trip started') // notify on rider side
+                callback()
+            }
+          
+        } catch (error) {
             console.log(error.message)
         }
     })
 
-    socket.on('close connection', function (data) {
-            delete connectionsRider[socket.rider_id];
-            console.log('hey')
-            socket.disconnect(true)
+    socket.on('end trip',(data)=>{
+        socket.to(data.room_id).emit('trip complete')
+    })
+
+    socket.on('close trip',async (data)=>{
+        try{
+            const trip_id = await verifyHash(data.trip_id)
+            const trip = await Trip.findByIdAndUpdate(trip_id.toString(), {status:'completed'}, {
+                new: true, // return the updated driver
+                runValidators: true // validate the Schema
+            })
+            // create payment class here
+            socket.to(data.room_id).emit('trip ended')
+        }catch(err){
+            console.log(err.message)
+        }
+       
+
+    })
+
+
+    socket.on('close connection-rider', function (data) {
+        delete connectionsRider[socket.rider_id];
+        console.log('hey')
+        socket.disconnect(true)
+    })
+    socket.on('close connection-driver', function (data) {
+        delete connectionsDriver[socket.driver_id];
+        console.log('hey')
+        socket.disconnect(true)
     })
 
 })
@@ -221,11 +322,11 @@ io.on('connection',(socket)=>{
 
 io.of("/").adapter.on("create-room", (room) => {
     console.log(`room ${room} was created`);
-  });
-  
-  io.of("/").adapter.on("join-room", (room, id) => {
+});
+
+io.of("/").adapter.on("join-room", (room, id) => {
     console.log(`socket ${id} has joined room ${room}`);
-  });
+});
 io.engine.on("connection_error", (err) => {
     console.log(err.req);      // the request object
     console.log(err.code);     // the error code, for example 1

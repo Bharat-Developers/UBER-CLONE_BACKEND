@@ -18,6 +18,7 @@ export default async function(req,res,next){
                 res.status(401).json({
                     msg: "Token not valid"
                 });
+              
             }else{
                 // data passed to next function  here rider: {id: rider._id}
                 req.rider  = decoded.rider
