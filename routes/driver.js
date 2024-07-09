@@ -47,7 +47,6 @@ router.post("/signUp", async (req, res) => {
 
         res.status(201).json({
             success: true,
-            token: token,
             msg: "Driver Created"
         });
         // The HTTP 201 Created success status response code indicates that the request has succeeded and has led to the creation of a resource.

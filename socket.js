@@ -97,7 +97,7 @@ io.on('connection', (socket) => {
         socket.join(room_id)
     })
 
-    socket.on('request ride', async function (data) {
+    socket.on('request ride', async function (data,callback) {
         try{
 
         connect(); // connect to db
@@ -159,6 +159,7 @@ io.on('connection', (socket) => {
                     socket.to(room).volatile.emit('ride request', { details: data.details, room_id: room, rider_id: token }, () => {
                         console.log('sended request')
                     })
+                    callback(room)
                 }
 
             })
@@ -172,16 +173,21 @@ io.on('connection', (socket) => {
     })
 
 
-    socket.on('cancel trip-rider', async (data) => {
+    socket.on('cancel trip-rider', async (data,room, isAccepted) => {
         // set trip status cancelled here
         try{
-            const trip_id = await verifyHash(data.trip_id)
-            const trip = await Trip.findByIdAndUpdate(trip_id.toString(), {status:'canceled'}, {
-                new: true, // return the updated driver
-                runValidators: true // validate the Schema
-            })
-            
-            socket.to(data.room_id).emit('canceled-rider', data)
+            if(isAccepted){
+                const trip_id = await verifyHash(data.trip_id)
+                const trip = await Trip.findByIdAndUpdate(trip_id.toString(), {status:'canceled'}, {
+                    new: true, // return the updated driver
+                    runValidators: true // validate the Schema
+                })
+                console.log(data.room_id)
+                socket.to(data.room_id).emit('canceled-rider', data)
+            }else{
+                socket.to(room).emit('tranfered', { room_id: room })
+            }
+           
         }catch(err){
             console.log(err.message)
         }
@@ -198,6 +204,7 @@ io.on('connection', (socket) => {
             })
             
             socket.to(data.room_id).emit('canceled-driver', data)
+            io.of('/').socketsLeave(data.room_id) 
         }catch(err){
             console.log(err.message)
         }
@@ -248,7 +255,8 @@ io.on('connection', (socket) => {
                             latLon: driver.latLon,
                             amount: data.details.amount,
                             otp: newTrip.otp,
-                            trip_id: token
+                            trip_id: token,
+                            room_id : data.room_id
                         }
                     )
 
