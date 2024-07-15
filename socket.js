@@ -14,6 +14,7 @@ import jwt from 'jsonwebtoken'
 import verifyHash from './middlewares/verifyHash.js';
 import Rider from './models/Rider.js'
 import Trip from './models/Trip.js';
+import axios from 'axios'
 const app = express();
 app.use(cors());
 const server = createServer(app);
@@ -101,9 +102,29 @@ io.on('connection', (socket) => {
         try{
 
         connect(); // connect to db
+        if(data.coor.lat==0 && data.coor.lon == 0){
+                const response = await axios.get(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${data.details.pickup}&limit=1`
+                );
+                data.details.pickupCoor.latitude = parseFloat(response.data[0].lat);
+                data.details.pickupCoor.longitude = parseFloat(response.data[0].lon);
+                
+                //console.log(data.details.pickupCoor)
+
+                data.coor.lat = data.details.pickupCoor.latitude
+                data.coor.lon = data.details.pickupCoor.longitude
+        }
+
+        if(data.details.dropoffCoor.latitude == 0){
+            const response2 = await axios.get(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${data.details.dropoff}&limit=1`
+            );
+            data.details.dropoffCoor.latitude = parseFloat(response2.data[0].lat);
+            data.details.dropoffCoor.longitude = parseFloat(response2.data[0].lon);
+        }
         const cell_ids = getCell_Ids({ latitude: data.coor.lat, longitude: data.coor.lon })// get cell ids of 30 cells around current cell
         const drivers_id = []
-        //console.log(cell_ids)
+        console.log(cell_ids)
         for (let i = 0; i < cell_ids.length; i++) {
             console.log(i + ' ')
             const cell = await AvaliableDriver.findOne({ cell_id: (cell_ids[i]).toString() })
@@ -114,7 +135,7 @@ io.on('connection', (socket) => {
                 for (let j = 0; j < driver_list.length; j++) {
                     drivers_id.push(driver_list[j])
                 }
-                //console.log(drivers_id)
+                console.log(drivers_id)
             }
 
         }
@@ -123,8 +144,8 @@ io.on('connection', (socket) => {
             console.log('no driver found')
         } else {
             const driversLatlon = []
-            for (const id of drivers_id) {
-                const driver = await Driver.findById(id).select("latLon availablity")
+            for (let i=0;i<drivers_id.length;i++) {
+                const driver = await Driver.findById(drivers_id[i]).select("latLon availablity")
                 if (driver.availablity) {
                     driversLatlon.push(driver.latLon)
                 }
@@ -137,7 +158,6 @@ io.on('connection', (socket) => {
             socket.join(room)
             for (let p = 0; p < drivers_id.length; p++) {
                 if (drivers_id[p].toString() in connectionsDriver) {
-                    console.log('000')
                     connectionsDriver[drivers_id[p].toString()].join(room)
                     console.log(connectionsDriver[drivers_id[p]].rooms)
                     //connectionsDriver[drivers_id[p].toString()].emit('ride request','hello')
@@ -232,6 +252,7 @@ io.on('connection', (socket) => {
             newTrip.destination = data.details.dropoff
             newTrip.amount = data.details.amount
             newTrip.status = 'accepted'
+
             // genrate otp
             const otp = Math.floor(1000 + Math.random() * 9000)
             newTrip.otp = otp
@@ -254,9 +275,12 @@ io.on('connection', (socket) => {
                             Rc: cab.rCNo,
                             latLon: driver.latLon,
                             amount: data.details.amount,
+                            pickupCoor: data.details.pickupCoor,
+                            dropoffCoor: data.details.dropoffCoor,
                             otp: newTrip.otp,
                             trip_id: token,
-                            room_id : data.room_id
+                            room_id : data.room_id,
+
                         }
                     )
 
@@ -324,7 +348,9 @@ io.on('connection', (socket) => {
         console.log('hey')
         socket.disconnect(true)
     })
-
+    socket.on('driver-location',function(data){
+        socket.to(data.room_id).emit('location-driver',{location:data.location})
+    })
 })
 
 
