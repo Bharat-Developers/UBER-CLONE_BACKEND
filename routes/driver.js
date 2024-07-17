@@ -190,6 +190,7 @@ router.delete("/", auth, async (req, res) => {
 //5. Get user details
 router.get("/", auth, async (req, res) => {
     try {
+        await connect();
         const driver = await Driver.findById(req.driver.id).select('-password -_id')
         if (!driver) {
             //404 return code actually means 'resource not found'

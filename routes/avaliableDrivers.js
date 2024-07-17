@@ -5,11 +5,13 @@ import authRider from '../middlewares/rider_jwt.js'
 import { getS2Id, getCell_Ids } from '../functions/S2CellIds.js'
 import AvaliableDriver from '../models/AvaliableDrivers.js'
 import Driver from '../models/Driver.js'
+import { connect } from '../config/db.js'
 const router = Router()
 
 
 router.put('/',authDriver,async(req,res,next) => {
     try{
+        connect();
         const action = req.body.action
         const cell_id = req.body.cell_id
 
@@ -73,6 +75,7 @@ router.put('/',authDriver,async(req,res,next) => {
 
 router.get('/',authRider,async(req,res,next) => {
     try{
+        connect();
         const coordinate = req.body.coordinate;//{latitude,longitude}
         const S2cell = getS2Id(coordinate) // get current location cell id
         const cells = getCell_Ids(coordinate)// get cell ids of 30 cells around current cell

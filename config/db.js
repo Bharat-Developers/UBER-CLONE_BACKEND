@@ -31,6 +31,6 @@ export const connect = async () => {
     }
     catch (error) {
         console.error('Error occurred while connecting to Database', error);
-        throw new Error('Error occurred while connecting to Database');
+        //throw new Error('Error occurred while connecting to Database');
     }
 }
